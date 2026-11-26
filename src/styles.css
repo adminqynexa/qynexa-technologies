@@ -167,3 +167,17 @@
 .workspace-quotation .quote-total-preview{max-width:360px;margin-left:auto;padding:14px;font-size:14px}
 .workspace-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
 @media(max-width:760px){.workspace-grid{grid-template-columns:1fr}.workspace-top{align-items:flex-start;flex-wrap:wrap}.workspace-top>div{flex-basis:100%;order:2}.quote-fields{grid-template-columns:1fr}.workspace-quotation .quote-line{grid-template-columns:minmax(120px,1fr) 65px 85px 24px}.workspace-actions{flex-direction:column}.workspace-actions .btn{justify-content:center}}
+
+/* Customer PO and internal sales order workspace */
+.workspace-orders{margin-top:2px}
+.po-entry-grid{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:12px;margin:16px 0}
+.po-entry-grid label,.po-notes-label{display:block;color:#526657;font-size:12px;font-weight:700}
+.po-entry-grid input,.po-notes-label textarea{display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:10px;border:1px solid #cbd7cb;border-radius:8px;background:#fff;color:#203328;font:inherit;font-size:12px}
+.po-notes-label{margin-bottom:14px}
+.po-warning{padding:11px 13px;background:#fff5df;border:1px solid #ecd59e;border-radius:8px;color:#76551b;font-size:13px}
+.orders-subheading{margin:22px 0 10px;color:#214331;font-size:15px}
+.document-list{display:grid;gap:8px}
+.document-list>div{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px;border:1px solid #dce5dc;border-radius:8px;background:#f8faf7}
+.document-list>div span,.document-list>div small{color:#66756a;font-size:12px}
+.document-list>div b{color:#214331}
+@media(max-width:760px){.po-entry-grid{grid-template-columns:1fr}}
