@@ -134,3 +134,36 @@
 .quote-add{border:0;background:transparent;color:#176b49;font-size:12px;font-weight:700;cursor:pointer;padding:5px 0}
 .quote-total-preview{padding:9px;margin:8px 0;background:#eaf2e9;border-radius:7px;color:#214b35;font-size:12px;line-height:1.8;font-weight:700}
 .admin-quote-cell textarea{display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:8px;border:1px solid #cbd7cb;border-radius:7px;background:white;color:#203328;font:inherit;font-size:12px;resize:vertical}
+
+/* Customer list and focused customer workspace */
+.admin-list-table{min-width:850px}
+.admin-open-btn{padding:9px 14px;min-height:38px;white-space:nowrap;font-size:12px}
+.customer-workspace{display:flex;flex-direction:column;gap:18px;margin:20px 0}
+.workspace-top{display:flex;align-items:center;gap:18px;padding:18px 20px;background:#fff;border:1px solid #d8e0d6;border-radius:14px}
+.workspace-top h2{margin:4px 0;color:#1c3427;font-size:25px}
+.workspace-top p{margin:0;color:#657468;font-size:13px}
+.workspace-top>div{flex:1}
+.workspace-status{display:inline-flex;align-items:center;padding:7px 12px;border-radius:20px;background:#e8f1e8;color:#246344;font-size:12px;font-weight:700;text-transform:capitalize}
+.workspace-tabs{display:flex;gap:8px;border-bottom:1px solid #d7e0d6;padding:0 4px 10px;color:#246344;font-size:13px;font-weight:700}
+.workspace-tabs span{padding:8px 13px;background:#e9f1e9;border-radius:8px}
+.workspace-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.workspace-card{padding:20px;background:#fff;border:1px solid #d8e0d6;border-radius:13px;min-width:0}
+.workspace-card h3{margin:0 0 14px;color:#214331;font-size:18px}
+.workspace-card p{color:#526657;line-height:1.6}
+.workspace-message{padding:13px;background:#f4f7f2;border-radius:8px;white-space:pre-wrap}
+.workspace-card label{display:block;margin:12px 0;color:#526657;font-size:12px;font-weight:700}
+.workspace-card label input,.workspace-card label textarea,.workspace-card label select{display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:10px 12px;border:1px solid #cbd7cb;border-radius:8px;background:#fff;color:#203328;font:inherit;font-size:13px}
+.workspace-section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.workspace-section-title h3{margin:5px 0 0}
+.workspace-hint{color:#718073;font-size:12px}
+.quote-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.quote-fields label{display:block;color:#526657;font-size:12px;font-weight:700}
+.quote-fields input,.quote-fields select,.quote-fields textarea{display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:10px 12px;border:1px solid #cbd7cb;border-radius:8px;background:#fff;color:#203328;font:inherit;font-size:13px}
+.quote-line-heading{display:flex;justify-content:space-between;gap:10px;color:#294333;font-size:13px;margin-bottom:8px}
+.quote-line-heading span{color:#718073;font-size:11px}
+.workspace-quotation .quote-line-items{margin:16px 0}
+.workspace-quotation .quote-line{grid-template-columns:minmax(180px,1fr) 90px 130px 28px;gap:8px}
+.workspace-quotation .quote-line input{padding:10px;font-size:13px}
+.workspace-quotation .quote-total-preview{max-width:360px;margin-left:auto;padding:14px;font-size:14px}
+.workspace-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+@media(max-width:760px){.workspace-grid{grid-template-columns:1fr}.workspace-top{align-items:flex-start;flex-wrap:wrap}.workspace-top>div{flex-basis:100%;order:2}.quote-fields{grid-template-columns:1fr}.workspace-quotation .quote-line{grid-template-columns:minmax(120px,1fr) 65px 85px 24px}.workspace-actions{flex-direction:column}.workspace-actions .btn{justify-content:center}}
