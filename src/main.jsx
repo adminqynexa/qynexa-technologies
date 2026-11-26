@@ -126,20 +126,6 @@ function AdminPortal() {
     setNotice('Internal notes and follow-up saved.');
   }
   function editQuote(item,field,value){setQuoteDraft(old=>({...old,[item.id]:{quote_number:item.quote_number||'',quote_amount:item.quote_amount??'',quote_valid_until:item.quote_valid_until||'',quote_status:item.quote_status||'not_prepared',...(old[item.id]||{}),[field]:value}}));}
-  async function saveQuote(item){
-    const draft=quoteDraft[item.id]||{quote_number:item.quote_number||'',quote_amount:item.quote_amount??'',quote_valid_until:item.quote_valid_until||'',quote_status:item.quote_status||'not_prepared'};
-    const amount=quoteTotal(item);
-    if(amount!==null&&(!Number.isFinite(amount)||amount<0)){setError('Enter a valid non-negative quotation amount.');return;}
-    setSavingQuote(old=>({...old,[item.id]:true}));setError('');setNotice('');
-    const payload={quote_number:draft.quote_number.trim()||null,quote_amount:amount,quote_items:getQuoteItems(item),quote_gst_rate:Number(quoteGst[item.id]??item.quote_gst_rate??18),quote_terms:quoteTerms[item.id]??item.quote_terms??null,quote_valid_until:draft.quote_valid_until||null,quote_status:draft.quote_status};
-    const {error:saveError}=await supabase.from('enquiries').update(payload).eq('id',item.id);
-    setSavingQuote(old=>({...old,[item.id]:false}));
-    if(saveError){setError('Could not save quotation details: '+saveError.message);return;}
-    setEnquiries(old=>old.map(row=>row.id===item.id?{...row,...payload}:row));
-    setQuoteDraft(old=>{const next={...old};delete next[item.id];return next;});
-    setNotice('Quotation details saved.');
-  }
-
   function getQuoteItems(item){return quoteItems[item.id]||item.quote_items||[{description:item.service||'IT services',quantity:1,rate:Number(item.quote_amount)||0}];}
   function changeQuoteItem(item,index,field,value){const rows=[...getQuoteItems(item)];rows[index]={...rows[index],[field]:value};setQuoteItems(old=>({...old,[item.id]:rows}));}
   function addQuoteItem(item){setQuoteItems(old=>({...old,[item.id]:[...getQuoteItems(item),{description:'',quantity:1,rate:0}]}));}
