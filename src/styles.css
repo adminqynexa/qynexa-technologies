@@ -104,3 +104,7 @@
 .admin-empty{padding:35px;text-align:center;border:1px dashed #b9c8b9;border-radius:12px;color:#657468;background:#fff}
 .admin-notice{color:#18724d;font-size:13px}
 @media(max-width:700px){.admin-login{padding:22px}.admin-heading{align-items:flex-start;flex-direction:column}.admin-toolbar{align-items:stretch;flex-direction:column}.admin-toolbar .btn{justify-content:center}.admin-summary{flex-wrap:wrap}.admin-summary strong{margin-left:0}}
+
+/* Keep the admin page content clear of the fixed site navigation */
+.admin-section{padding-top:150px}
+@media(max-width:700px){.admin-section{padding-top:105px}}
