@@ -206,7 +206,8 @@ function AdminPortal() {
     if(!selectedEnquiry||!so)return;
     const draft=invoiceBuyer[so.id]||{},buyerName=(draft.buyer_name??selectedEnquiry.name).trim(),stateCode=String(draft.buyer_state_code??'').trim();
     const rows=(so.items||[]).map(row=>({...row,hsn_sac:row.hsn_sac||'',gst_rate:Number(row.gst_rate??row.tax_rate??so.gst_rate??18)}));
-    if(!buyerName){setError('Enter the buyer legal name before generating the invoice.');return;}\n    if(!/^\\d{2}$/.test(stateCode)||!String(draft.buyer_state??'').trim()){setError('Enter the buyer state and its two-digit GST state code to calculate the correct GST.');return;}
+    if(!buyerName){setError('Enter the buyer legal name before generating the invoice.');return;}
+    if(!/^\d{2}$/.test(stateCode)||!String(draft.buyer_state??'').trim()){setError('Enter the buyer state and its two-digit GST state code to calculate the correct GST.');return;}
     if(rows.some(row=>!String(row.description||'').trim()||Number(row.quantity)<=0||Number(row.rate)<0||!Number.isFinite(Number(row.gst_rate))||Number(row.gst_rate)<0||Number(row.gst_rate)>100)){setError('Check invoice item descriptions, quantities, rates and GST rates.');return;}
     const totals=invoiceFinancials(rows,stateCode),number=invoiceNumber();
     setInvoiceBusy(true);setError('');setNotice('');
