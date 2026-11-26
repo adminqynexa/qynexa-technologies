@@ -181,3 +181,13 @@
 .document-list>div span,.document-list>div small{color:#66756a;font-size:12px}
 .document-list>div b{color:#214331}
 @media(max-width:760px){.po-entry-grid{grid-template-columns:1fr}}
+
+/* GST invoice creation */
+.invoice-create-list{display:grid;gap:14px;margin:12px 0}
+.invoice-create-card{padding:14px;border:1px solid #dce5dc;border-radius:10px;background:#f8faf7}
+.invoice-create-card>div:first-child{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:#214331}
+.invoice-create-card small{color:#718073;font-size:11px}
+.invoice-buyer-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:8px 0 12px}
+.invoice-buyer-fields label{display:block;margin:8px 0;color:#526657;font-size:11px;font-weight:700}
+.invoice-buyer-fields input{display:block;width:100%;box-sizing:border-box;margin-top:5px;padding:9px;border:1px solid #cbd7cb;border-radius:7px;background:#fff;color:#203328;font:inherit;font-size:12px}
+@media(max-width:760px){.invoice-buyer-fields{grid-template-columns:1fr}}
