@@ -79,7 +79,15 @@ function AdminPortal() {
   const [quoteGst,setQuoteGst]=React.useState({});
   const [quoteTerms,setQuoteTerms]=React.useState({});
   const [selectedEnquiryId,setSelectedEnquiryId]=React.useState(null);
+  const [customerPOs,setCustomerPOs]=React.useState([]);
+  const [salesOrders,setSalesOrders]=React.useState([]);
+  const [poNumber,setPoNumber]=React.useState('');
+  const [poDate,setPoDate]=React.useState(new Date().toISOString().slice(0,10));
+  const [poFile,setPoFile]=React.useState(null);
+  const [poNotes,setPoNotes]=React.useState('');
+  const [poBusy,setPoBusy]=React.useState(false);
   const selectedEnquiry=enquiries.find(item=>item.id===selectedEnquiryId)||null;
+  React.useEffect(()=>{if(!selectedEnquiryId||!session||!isAdmin)return;let active=true;(async()=>{const [p,s]=await Promise.all([supabase.from('customer_purchase_orders').select('*').eq('enquiry_id',selectedEnquiryId).order('created_at',{ascending:false}),supabase.from('sales_orders').select('*').eq('enquiry_id',selectedEnquiryId).order('created_at',{ascending:false})]);if(!active)return;if(p.error||s.error){setError(p.error?.message||s.error?.message);return;}setCustomerPOs(p.data||[]);setSalesOrders(s.data||[]);})();return()=>{active=false;};},[selectedEnquiryId,session,isAdmin]);
 
   const verifyAndLoad=React.useCallback(async currentSession=>{
     setSession(currentSession);
@@ -155,6 +163,33 @@ function AdminPortal() {
     setQuoteDraft(old=>{const next={...old};delete next[item.id];return next;});
     setNotice('Quotation details saved.');
   }
+
+  async function receiveCustomerPO(){
+    if(!selectedEnquiry||!poNumber.trim()){setError('Enter the customer PO number.');return;}
+    if(selectedEnquiry.quote_status!=='accepted'){setError('Mark the quotation as Accepted and save it before recording the customer PO.');return;}
+    setPoBusy(true);setError('');setNotice('');
+    let documentPath=null;
+    if(poFile){
+      const safeName=poFile.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+      documentPath=selectedEnquiry.id+'/'+Date.now()+'-'+safeName;
+      const {error:uploadError}=await supabase.storage.from('customer-pos').upload(documentPath,poFile,{upsert:false});
+      if(uploadError){setPoBusy(false);setError('PO upload failed: '+uploadError.message);return;}
+    }
+    const {data:po,error:poError}=await supabase.from('customer_purchase_orders').insert({enquiry_id:selectedEnquiry.id,quote_number:selectedEnquiry.quote_number||null,customer_po_number:poNumber.trim(),po_date:poDate||null,document_path:documentPath,notes:poNotes||null,created_by:session.user.id}).select().single();
+    if(poError){setPoBusy(false);setError('Could not save customer PO: '+poError.message);return;}
+    const subtotal=Number(selectedEnquiry.quote_amount)||0,gstRate=Number(selectedEnquiry.quote_gst_rate)||0,gstAmount=subtotal*gstRate/100;
+    const soNumber='QYN-SO-'+new Date().getFullYear()+'-'+Date.now().toString().slice(-7);
+    const {data:so,error:soError}=await supabase.from('sales_orders').insert({enquiry_id:selectedEnquiry.id,customer_po_id:po.id,sales_order_number:soNumber,order_date:new Date().toISOString().slice(0,10),status:'confirmed',items:selectedEnquiry.quote_items||[],subtotal,gst_rate:gstRate,gst_amount:gstAmount,total_amount:subtotal+gstAmount,created_by:session.user.id}).select().single();
+    setPoBusy(false);
+    if(soError){setError('Customer PO saved, but Sales Order creation failed: '+soError.message+' You can retry after checking the Sales Orders table.');setCustomerPOs(old=>[po,...old]);return;}
+    setCustomerPOs(old=>[po,...old]);setSalesOrders(old=>[so,...old]);setPoNumber('');setPoFile(null);setPoNotes('');setNotice('Customer PO recorded and Qynexa Sales Order '+soNumber+' created.');
+  }
+  async function openPODocument(path){
+    const {data,error:linkError}=await supabase.storage.from('customer-pos').createSignedUrl(path,300);
+    if(linkError){setError('Could not open PO document: '+linkError.message);return;}
+    window.open(data.signedUrl,'_blank','noopener,noreferrer');
+  }
+
   const visible=enquiries.filter(item=>(filter==='all'||(item.status||'new')===filter)&&[item.name,item.company,item.email,item.phone,item.service,item.message].some(v=>(v||'').toLowerCase().includes(search.toLowerCase())));
   if(loading)return <section className="section"><div className="container admin-shell"><p>Checking administrator session…</p></div></section>;
   if(!session||!isAdmin)return <section className="section admin-section"><div className="container admin-shell admin-login"><span className="eyebrow">Qynexa Technologies</span><h1>Administrator login</h1><p>Sign in with your authorised administrator account to manage customer enquiries.</p><form className="contact-form" onSubmit={signIn}><label>Email address<input type="email" autoComplete="username" required value={email} onChange={e=>setEmail(e.target.value)}/></label><label>Password<input type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)}/></label><button className="btn" disabled={busy||!supabase} type="submit"><LogIn size={17}/>{busy?'Signing in…':'Sign in'}</button>{error&&<div className="form-status" role="alert">{error}</div>}</form><small className="privacy-note">Access is restricted to accounts registered in the administrator allowlist.</small></div></section>;
@@ -171,6 +206,16 @@ function AdminPortal() {
       <div className="quote-fields"><label>GST %<input type="number" min="0" max="100" step="0.01" value={quoteGst[selectedEnquiry.id]??selectedEnquiry.quote_gst_rate??18} onChange={e=>setQuoteGst(old=>({...old,[selectedEnquiry.id]:e.target.value}))}/></label><label>Terms & conditions<textarea rows="3" value={quoteTerms[selectedEnquiry.id]??selectedEnquiry.quote_terms??'Prices are valid until the date mentioned above. Work will commence after written acceptance of this quotation.'} onChange={e=>setQuoteTerms(old=>({...old,[selectedEnquiry.id]:e.target.value}))}/></label></div>
       <div className="quote-total-preview">Subtotal: ₹{quoteTotal(selectedEnquiry).toLocaleString('en-IN')}<br/>Total incl. GST: ₹{(quoteTotal(selectedEnquiry)*(1+Number(quoteGst[selectedEnquiry.id]??selectedEnquiry.quote_gst_rate??18)/100)).toLocaleString('en-IN',{maximumFractionDigits:2})}</div>
       <div className="workspace-actions"><button className="btn" disabled={!!savingQuote[selectedEnquiry.id]} onClick={()=>saveQuote(selectedEnquiry)}>{savingQuote[selectedEnquiry.id]?'Saving…':'Save quotation'}</button><button type="button" className="btn btn-outline" onClick={()=>printQuotation(selectedEnquiry)}>Print / Save PDF</button></div>
+    </div>
+
+    <div className="workspace-card workspace-orders"><div className="workspace-section-title"><div><span className="eyebrow">Order processing</span><h3>Customer Purchase Order</h3></div><span className="workspace-hint">Record the customer's official PO after quotation acceptance</span></div>
+      {selectedEnquiry.quote_status!=='accepted'&&<p className="po-warning">Accept and save the quotation above before recording a customer PO.</p>}
+      <div className="po-entry-grid"><label>Customer PO number<input value={poNumber} onChange={e=>setPoNumber(e.target.value)} placeholder="Customer's PO reference"/></label><label>PO date<input type="date" value={poDate} onChange={e=>setPoDate(e.target.value)}/></label><label>Customer PO document (PDF/image)<input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" onChange={e=>setPoFile(e.target.files?.[0]||null)}/></label></div>
+      <label className="po-notes-label">Notes<textarea rows="2" value={poNotes} onChange={e=>setPoNotes(e.target.value)} placeholder="Optional PO notes"/></label>
+      <button className="btn" disabled={poBusy||selectedEnquiry.quote_status!=='accepted'} onClick={receiveCustomerPO}>{poBusy?'Processing…':'Record PO & create Sales Order'}</button>
+      <p className="workspace-hint">This records the customer's PO and creates a linked internal Qynexa Sales Order using the accepted quotation's saved items and totals.</p>
+      <h3 className="orders-subheading">Received customer POs</h3>{customerPOs.length===0?<p className="workspace-hint">No customer POs recorded yet.</p>:<div className="document-list">{customerPOs.map(po=><div key={po.id}><b>{po.customer_po_number}</b><span>{po.po_date||'Date not provided'}</span>{po.document_path&&<button className="quote-add" onClick={()=>openPODocument(po.document_path)}>Open uploaded PO</button>}</div>)}</div>}
+      <h3 className="orders-subheading">Qynexa Sales Orders</h3>{salesOrders.length===0?<p className="workspace-hint">No sales orders generated yet.</p>:<div className="document-list">{salesOrders.map(so=><div key={so.id}><b>{so.sales_order_number}</b><span>{so.status} · ₹{Number(so.total_amount).toLocaleString('en-IN',{minimumFractionDigits:2})}</span><small>Order date: {so.order_date}</small></div>)}</div>}
     </div>
   </div> : visible.length===0?<div className="admin-empty">No enquiries match your search.</div>:<div className="admin-table-wrap"><table className="admin-table admin-list-table"><thead><tr><th>Customer</th><th>Requirement</th><th>Received</th><th>Status</th><th>Quotation</th><th>Action</th></tr></thead><tbody>{visible.map(item=><tr key={item.id}><td><strong>{item.name}</strong><small>{item.company||'—'}</small><a href={'mailto:'+item.email}>{item.email}</a>{item.phone&&<small>{item.phone}</small>}</td><td>{item.service||'Not specified'}</td><td>{item.created_at?new Date(item.created_at).toLocaleString():'—'}</td><td><span className="workspace-status">{item.status||'new'}</span></td><td>{item.quote_number||'Not created'}<small>{item.quote_amount!=null?'₹'+Number(item.quote_amount).toLocaleString('en-IN'):'—'}</small></td><td><button className="btn admin-open-btn" onClick={()=>setSelectedEnquiryId(item.id)}>Open customer →</button></td></tr>)}</tbody></table></div>}</div></section>;
 }
