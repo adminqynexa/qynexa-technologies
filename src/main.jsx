@@ -1,7 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Link, NavLink, Route, Routes } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight, Network, Server, Cloud, ShieldCheck, Laptop, Headset, Code2, Settings, Menu, X, Mail, Phone, MapPin, CheckCircle2, Building2, Cpu, Workflow } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Network, Server, Cloud, ShieldCheck, Laptop, Headset, Code2, Settings, Menu, X, Mail, Phone, MapPin, CheckCircle2, Building2, Cpu, Workflow, LogIn, LogOut, RefreshCw, Search } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import './styles.css';
 import qynexaLogo from './assets/qynexa-logo.png';
@@ -58,7 +58,61 @@ function Partners() { const brands=[
  ]; return <><PageIntro eyebrow="Brands & technologies we support" title={<>Support across the technology brands <em>you rely on.</em></>} desc="We provide IT support, deployment, troubleshooting and implementation assistance across a wide range of hardware, networking, security and software technologies."/><section className="section"><div className="container"><div className="partner-note"><ShieldCheck size={25}/><p>Qynexa Technologies is an authorised Microsoft Cloud Partner and reseller. For the other brands shown, we provide support, deployment, troubleshooting and implementation services; this does not imply authorised reseller or partner status with those manufacturers. All trademarks and logos belong to their respective owners.</p></div><div className="microsoft-partner-card"><div className="microsoft-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></div><div><strong>Authorised Microsoft Cloud Partner & Reseller</strong><p>Ask us about Microsoft 365, cloud subscriptions, deployment and ongoing support.</p></div><Link to="/contact" className="text-link">Contact us <ArrowUpRight size={15}/></Link></div><div className="partner-grid">{brands.map(([name,slug,category])=><div className="partner-card" key={slug}><div className="partner-logo-stage"><img className="partner-logo-img" src={`https://cdn.simpleicons.org/${slug}`} alt={`${name} logo`} loading="lazy" onError={e=>{e.currentTarget.style.display='none';e.currentTarget.nextSibling.style.display='block';}}/><span className="partner-logo-fallback" style={{display:'none'}}>{name}</span></div><strong className="partner-brand-name">{name}</strong><small>{category}</small></div>)}</div><p className="muted center-text">Need help with another brand or product? <Link to="/contact" className="inline-link">Contact our team.</Link></p></div></section></> }
 function Contact() { const [form,setForm]=React.useState({name:'',company:'',email:'',phone:'',service:'',message:''}); const [status,setStatus]=React.useState(''); const update=e=>setForm({...form,[e.target.name]:e.target.value}); async function submit(e){e.preventDefault();setStatus('');if(!supabase){setStatus('The enquiry form is ready, but Supabase is not configured yet. Please use the email or WhatsApp contact options below.');return;}const {error}=await supabase.from('enquiries').insert([{...form,source:'website'}]);if(error){setStatus('We could not submit your enquiry. Please email admin@qynexa.in or contact us on WhatsApp.');}else{setStatus('Thank you. Your enquiry has been submitted successfully.');setForm({name:'',company:'',email:'',phone:'',service:'',message:''});}}
 return <><PageIntro eyebrow="Contact us" title={<>Let's find the right solution <em>for your business.</em></>} desc="Tell us about your IT requirement, project or support needs. Our team will get back to you."/><section className="section"><div className="container contact-layout"><div className="contact-info"><span className="eyebrow">Get in touch</span><h2>Start a conversation.</h2><p>Reach out for service enquiries, IT procurement, project discussions or a quotation.</p><a className="contact-item" href="mailto:admin@qynexa.in"><span><Mail/></span><div><small>Email</small><strong>admin@qynexa.in</strong></div></a><a className="contact-item" href="tel:+917907533840"><span><Phone/></span><div><small>Phone / WhatsApp</small><strong>+91 79075 33840</strong></div></a><a className="contact-item" href={waLink} target="_blank" rel="noreferrer"><span><Headset/></span><div><small>WhatsApp</small><strong>Chat with our team <ArrowUpRight size={14}/></strong></div></a><div className="contact-parent"><Building2 size={18}/><span>Qynexa Technologies<br/><small>IT SOLUTIONS & SERVICES</small></span></div></div><form className="contact-form" onSubmit={submit}><h3>Send an enquiry</h3><p>Fields marked * are required.</p><div className="form-grid"><label>Full name *<input required name="name" value={form.name} onChange={update} placeholder="Your name"/></label><label>Company name<input name="company" value={form.company} onChange={update} placeholder="Your organization"/></label><label>Business email *<input required type="email" name="email" value={form.email} onChange={update} placeholder="you@company.com"/></label><label>Phone number<input name="phone" value={form.phone} onChange={update} placeholder="Your contact number"/></label><label className="full-field">Service required<select name="service" value={form.service} onChange={update}><option value="">Select a service</option>{services.map(s=><option key={s.title}>{s.title}</option>)}<option>Other / Not sure</option></select></label><label className="full-field">How can we help? *<textarea required name="message" value={form.message} onChange={update} rows="5" placeholder="Describe your requirement..."/></label></div><button className="btn" type="submit">Submit enquiry <ArrowRight size={17}/></button>{status&&<div className="form-status" role="status">{status}</div>}<small className="privacy-note">Your information will be used to respond to this enquiry.</small></form></div></section></> }
+
+function AdminPortal() {
+  const [session,setSession]=React.useState(null);
+  const [email,setEmail]=React.useState('admin@qynexa.in');
+  const [password,setPassword]=React.useState('');
+  const [loading,setLoading]=React.useState(true);
+  const [busy,setBusy]=React.useState(false);
+  const [error,setError]=React.useState('');
+  const [isAdmin,setIsAdmin]=React.useState(false);
+  const [enquiries,setEnquiries]=React.useState([]);
+  const [filter,setFilter]=React.useState('all');
+  const [search,setSearch]=React.useState('');
+  const [notice,setNotice]=React.useState('');
+
+  const verifyAndLoad=React.useCallback(async currentSession=>{
+    setSession(currentSession);
+    if(!currentSession){setIsAdmin(false);setEnquiries([]);setLoading(false);return;}
+    const {data:member,error:memberError}=await supabase.from('admin_users').select('user_id').eq('user_id',currentSession.user.id).maybeSingle();
+    if(memberError||!member){setIsAdmin(false);setError('This account is not authorised to access the administrator portal.');setLoading(false);return;}
+    setIsAdmin(true);
+    const {data,error:loadError}=await supabase.from('enquiries').select('*').order('created_at',{ascending:false});
+    if(loadError)setError('Unable to load enquiries: '+loadError.message);
+    else {setEnquiries(data||[]);setError('');}
+    setLoading(false);
+  },[]);
+
+  React.useEffect(()=>{
+    if(!supabase){setError('Supabase is not configured.');setLoading(false);return;}
+    let active=true;
+    supabase.auth.getSession().then(({data})=>{if(active)verifyAndLoad(data.session);});
+    const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,nextSession)=>{if(active)verifyAndLoad(nextSession);});
+    return ()=>{active=false;subscription.unsubscribe();};
+  },[verifyAndLoad]);
+
+  async function signIn(e){
+    e.preventDefault();setBusy(true);setError('');
+    const {data,error:loginError}=await supabase.auth.signInWithPassword({email:email.trim(),password});
+    if(loginError){setError(loginError.message);setBusy(false);return;}
+    await verifyAndLoad(data.session);setPassword('');setBusy(false);
+  }
+  async function signOut(){await supabase.auth.signOut();setSession(null);setIsAdmin(false);setEnquiries([]);}
+  async function refresh(){setNotice('');const {data,error:loadError}=await supabase.from('enquiries').select('*').order('created_at',{ascending:false});if(loadError)setError(loadError.message);else{setEnquiries(data||[]);setError('');setNotice('Enquiries refreshed.');}}
+  async function updateStatus(id,status){
+    const {error:updateError}=await supabase.from('enquiries').update({status}).eq('id',id);
+    if(updateError){setError('Could not update status: '+updateError.message);return;}
+    setEnquiries(old=>old.map(item=>item.id===id?{...item,status}:item));
+    setNotice('Enquiry status updated.');
+  }
+  const visible=enquiries.filter(item=>(filter==='all'||(item.status||'new')===filter)&&[item.name,item.company,item.email,item.phone,item.service,item.message].some(v=>(v||'').toLowerCase().includes(search.toLowerCase())));
+  if(loading)return <section className="section"><div className="container admin-shell"><p>Checking administrator session…</p></div></section>;
+  if(!session||!isAdmin)return <section className="section admin-section"><div className="container admin-shell admin-login"><span className="eyebrow">Qynexa Technologies</span><h1>Administrator login</h1><p>Sign in with your authorised administrator account to manage customer enquiries.</p><form className="contact-form" onSubmit={signIn}><label>Email address<input type="email" autoComplete="username" required value={email} onChange={e=>setEmail(e.target.value)}/></label><label>Password<input type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)}/></label><button className="btn" disabled={busy||!supabase} type="submit"><LogIn size={17}/>{busy?'Signing in…':'Sign in'}</button>{error&&<div className="form-status" role="alert">{error}</div>}</form><small className="privacy-note">Access is restricted to accounts registered in the administrator allowlist.</small></div></section>;
+  return <section className="section admin-section"><div className="container admin-shell"><div className="admin-heading"><div><span className="eyebrow">Qynexa Technologies</span><h1>Enquiry dashboard</h1><p>Signed in as {session.user.email}</p></div><button className="btn btn-outline" onClick={signOut}><LogOut size={16}/> Sign out</button></div><div className="admin-toolbar"><div className="admin-search"><Search size={17}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search enquiries…"/></div><select value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">All statuses</option><option value="new">New</option><option value="contacted">Contacted</option><option value="quoted">Quoted</option><option value="closed">Closed</option></select><button className="btn btn-outline" onClick={refresh}><RefreshCw size={16}/> Refresh</button></div>{error&&<div className="form-status" role="alert">{error}</div>}{notice&&<p className="admin-notice">{notice}</p>}<div className="admin-summary"><strong>{enquiries.length}</strong><span>Total enquiries</span><strong>{enquiries.filter(x=>(x.status||'new')==='new').length}</strong><span>New enquiries</span></div>{visible.length===0?<div className="admin-empty">No enquiries match your search.</div>:<div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Customer</th><th>Requirement</th><th>Message</th><th>Received</th><th>Status</th></tr></thead><tbody>{visible.map(item=><tr key={item.id}><td><strong>{item.name}</strong><small>{item.company||'—'}</small><a href={'mailto:'+item.email}>{item.email}</a>{item.phone&&<small>{item.phone}</small>}</td><td>{item.service||'Not specified'}</td><td className="admin-message">{item.message}</td><td>{item.created_at?new Date(item.created_at).toLocaleString():'—'}</td><td><select aria-label={'Status for '+item.name} value={item.status||'new'} onChange={e=>updateStatus(item.id,e.target.value)}><option value="new">New</option><option value="contacted">Contacted</option><option value="quoted">Quoted</option><option value="closed">Closed</option></select></td></tr>)}</tbody></table></div>}</div></section>;
+}
+
 function NotFound(){return <PageIntro eyebrow="Page not found" title="We couldn't find that page." desc="Please use the navigation to continue exploring Qynexa Technologies."/>}
-function App(){return <BrowserRouter basename={import.meta.env.BASE_URL}><Header/><main><Routes><Route path="/" element={<Home/>}/><Route path="/about" element={<About/>}/><Route path="/services" element={<Services/>}/><Route path="/partners" element={<Partners/>}/><Route path="/contact" element={<Contact/>}/><Route path="*" element={<NotFound/>}/></Routes></main><Footer/><a className="whatsapp-float" href={waLink} target="_blank" rel="noreferrer" aria-label="Chat with Qynexa on WhatsApp"><Headset size={23}/></a></BrowserRouter>}
+function App(){return <BrowserRouter basename={import.meta.env.BASE_URL}><Header/><main><Routes><Route path="/" element={<Home/>}/><Route path="/about" element={<About/>}/><Route path="/services" element={<Services/>}/><Route path="/partners" element={<Partners/>}/><Route path="/contact" element={<Contact/>}/><Route path="/admin" element={<AdminPortal/>}/><Route path="*" element={<NotFound/>}/></Routes></main><Footer/><a className="whatsapp-float" href={waLink} target="_blank" rel="noreferrer" aria-label="Chat with Qynexa on WhatsApp"><Headset size={23}/></a></BrowserRouter>}
 
 createRoot(document.getElementById('root')).render(<React.StrictMode><App/></React.StrictMode>);
